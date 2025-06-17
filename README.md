@@ -7,6 +7,7 @@
 # Compile
 - First you need to install flutter on your computer.
 - Then open this project and run `flutter build {Your Plattfor, windows linux mac }`
+- It will output built file location.
 - Thats it!
 
 # Showcase
