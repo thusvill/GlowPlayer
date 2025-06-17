@@ -182,7 +182,6 @@ bool _lastWidthWasNarrow = false;
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -489,7 +488,26 @@ class _MeshAudioVisualizerState extends State<MeshAudioVisualizer>
 
   bool _hovering = false;
 
-  @override
+  void _playPreviousTrack() {
+    AudioService.current_index--;
+    if (AudioService.current_index >= 0) {
+      _pickAudioFile(AudioService.getCurrentFilePath());
+    } else {
+      AudioService.current_index = AudioService.audioFiles.length;
+      _pickAudioFile(AudioService.getCurrentFilePath());
+    }
+  }
+
+  void _playNextTrack() {
+    AudioService.current_index++;
+    if (AudioService.current_index < AudioService.audioFiles.length) {
+      _pickAudioFile(AudioService.getCurrentFilePath());
+    } else {
+      AudioService.current_index = 0;
+      _pickAudioFile(AudioService.getCurrentFilePath());
+    }
+  }
+
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: null,
@@ -655,9 +673,22 @@ class _MeshAudioVisualizerState extends State<MeshAudioVisualizer>
                                       .min, // shrink-wrap horizontally
                                   children: [
                                     IconButton(
-                                      key: ValueKey(AudioService.isPlaying.toString()),
+                                      
                                       icon: Icon(
-
+                                        Icons.fast_rewind_rounded,
+                                        color: Colors.white,
+                                        size: 25,
+                                      ),
+                                      onPressed: () {
+                                        setState(() {
+                                          _playPreviousTrack();
+                                        });
+                                      },
+                                    ),
+                                    IconButton(
+                                      key: ValueKey(
+                                          AudioService.isPlaying.toString()),
+                                      icon: Icon(
                                         AudioService.isPlaying
                                             ? Icons.pause
                                             : Icons.play_arrow,
@@ -667,6 +698,19 @@ class _MeshAudioVisualizerState extends State<MeshAudioVisualizer>
                                       onPressed: () {
                                         setState(() {
                                           AudioService.togglePlayPause();
+                                        });
+                                      },
+                                    ),
+                                    IconButton(
+                                      
+                                      icon: Icon(
+                                        Icons.fast_forward_rounded,
+                                        color: Colors.white,
+                                        size: 25,
+                                      ),
+                                      onPressed: () {
+                                        setState(() {
+                                          _playNextTrack();
                                         });
                                       },
                                     ),
@@ -876,8 +920,7 @@ class _MeshAudioVisualizerState extends State<MeshAudioVisualizer>
                 top: 60,
                 left: _isSidePanelOpen ? 250 : 0,
                 child: _isSidePanelOpen
-                    ? const SizedBox
-                        .shrink() 
+                    ? const SizedBox.shrink()
                     : GestureDetector(
                         onTap: () {
                           setState(() {
@@ -902,8 +945,6 @@ class _MeshAudioVisualizerState extends State<MeshAudioVisualizer>
                         ),
                       ),
               ),
-
-              
             ],
           );
         },
