@@ -155,6 +155,18 @@ String _formatDuration(Duration d) {
   final seconds = twoDigits(d.inSeconds.remainder(60));
   return "$minutes:$seconds";
 }
+class _NoArrowKeyFocusTraversalPolicy extends WidgetOrderTraversalPolicy {
+  @override
+  bool inDirection(FocusNode currentNode, TraversalDirection direction) {
+    if (direction == TraversalDirection.left ||
+        direction == TraversalDirection.right ||
+        direction == TraversalDirection.up ||
+        direction == TraversalDirection.down) {
+      return false;
+    }
+    return super.inDirection(currentNode, direction);
+  }
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -184,6 +196,12 @@ class MyApp extends StatelessWidget {
 
   Widget build(BuildContext context) {
     return MaterialApp(
+      builder: (context, child) {
+        return FocusTraversalGroup(
+          policy: _NoArrowKeyFocusTraversalPolicy(),
+          child: child!,
+        );
+      },
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark(),
       home: MeshAudioVisualizer(),
@@ -314,7 +332,6 @@ class _MeshAudioVisualizerState extends State<MeshAudioVisualizer>
     if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.space) {
       setState(() {
         AudioService.togglePlayPause();
-        
       });
       return true;
     }
@@ -673,7 +690,6 @@ class _MeshAudioVisualizerState extends State<MeshAudioVisualizer>
                                       .min, // shrink-wrap horizontally
                                   children: [
                                     IconButton(
-                                      
                                       icon: Icon(
                                         Icons.fast_rewind_rounded,
                                         color: Colors.white,
@@ -702,7 +718,6 @@ class _MeshAudioVisualizerState extends State<MeshAudioVisualizer>
                                       },
                                     ),
                                     IconButton(
-                                      
                                       icon: Icon(
                                         Icons.fast_forward_rounded,
                                         color: Colors.white,
