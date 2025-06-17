@@ -533,7 +533,9 @@ class _MeshAudioVisualizerState extends State<MeshAudioVisualizer>
         builder: (context, constraints) {
           final width = constraints.maxWidth;
           final bool isNarrow = width < 700;
-
+          if(!isNarrow){
+            _manuallyToggled = false;
+          }
           if (!_manuallyToggled) {
             if (isNarrow && _isSidePanelOpen) {
               Future.microtask(() {
