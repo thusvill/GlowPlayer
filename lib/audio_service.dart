@@ -2,12 +2,21 @@ import 'dart:io';
 
 import 'package:audioplayers/audioplayers.dart';
 
+class TrackData {
+  final String path;
+  final String title;
+  final String artist;
+
+  TrackData({required this.path, required this.title, required this.artist});
+}
+
 class AudioService {
   static final AudioPlayer player = AudioPlayer();
   static bool isPlaying = true;
   static Duration position = Duration.zero;
   static Duration duration = Duration.zero;
-  static List<FileSystemEntity> audioFiles = [];
+  static List<TrackData> audioFiles = [];
+  static List<TrackData> allFiles = [];
   static int current_index = 1;
   static double volume =  1.0;
 

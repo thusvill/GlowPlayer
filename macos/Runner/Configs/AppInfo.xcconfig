@@ -5,10 +5,11 @@
 // 'flutter create' template.
 
 // The application's name. By default this is also the title of the Flutter window.
-PRODUCT_NAME = player
+PRODUCT_NAME = GlowPlayer
+ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.biosthusvill.player
+PRODUCT_BUNDLE_IDENTIFIER = com.biosthusvill.glowplayer
 
 // The copyright displayed in application information
 PRODUCT_COPYRIGHT = Copyright © 2025 com.biosthusvill. All rights reserved.
