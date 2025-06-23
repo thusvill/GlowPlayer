@@ -1,13 +1,29 @@
+import 'dart:ffi';
 import 'dart:io';
 
 import 'package:audioplayers/audioplayers.dart';
+import 'package:uuid/uuid.dart';
+
 
 class TrackData {
   final String path;
   final String title;
   final String artist;
+  final BigInt uuid;
 
-  TrackData({required this.path, required this.title, required this.artist});
+  static final _uuidGenerator = Uuid();
+
+  TrackData({
+    required this.path,
+    required this.title,
+    required this.artist,
+  }) : uuid = _uuidToBigInt(_uuidGenerator.v4());
+
+  static BigInt _uuidToBigInt(String uuidStr) {
+    // Remove dashes, get 32 hex characters (128 bits)
+    final hex = uuidStr.replaceAll('-', '');
+    return BigInt.parse(hex, radix: 16);
+  }
 }
 
 class AudioService {
@@ -19,6 +35,7 @@ class AudioService {
   static List<TrackData> allFiles = [];
   static int current_index = 1;
   static double volume =  1.0;
+  static BigInt current_uuid = BigInt.from(-1);
 
   static String getCurrentFilePath(){
     return audioFiles[current_index].path;

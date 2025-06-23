@@ -10,6 +10,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter_media_metadata/flutter_media_metadata.dart';
 import 'package:mesh_gradient/mesh_gradient.dart';
 import 'package:player/audio_service.dart';
+import 'package:uuid/uuid.dart';
 import 'waveform_dots_slider.dart';
 import 'package:image/image.dart' as img;
 import "package:window_manager/window_manager.dart";
@@ -368,9 +369,12 @@ class _MeshAudioVisualizerState extends State<MeshAudioVisualizer>
 
   void _applySearch() {
     final query = _searchQuery.trim().toLowerCase();
+    BigInt prev_uuid = AudioService.current_uuid;
 
     if (query.isEmpty) {
-      AudioService.audioFiles = [...AudioService.allFiles];
+      AudioService.audioFiles = AudioService.allFiles;
+      print("Search query is empty");
+      
     } else {
       final isArtistSearch = query.startsWith('@');
       final searchTerm = isArtistSearch ? query.substring(1) : query;
@@ -380,16 +384,32 @@ class _MeshAudioVisualizerState extends State<MeshAudioVisualizer>
             ? track.artist.toLowerCase()
             : track.title.toLowerCase();
 
-        // Fuzzy matching score
+
         final similarity =
             StringSimilarity.compareTwoStrings(target, searchTerm);
 
-        // Fallback to direct contains check
+
         final containsMatch = target.contains(searchTerm);
 
-        // Accept result if similarity is good or if it's a partial match
         return containsMatch || similarity > 0.9;
       }).toList();
+
+      if(AudioService.audioFiles.isEmpty){
+        AudioService.audioFiles = AudioService.allFiles;
+      }
+    }
+
+    if (AudioService.audioFiles
+            .indexWhere((entity) => entity.uuid == prev_uuid) !=
+        -1) {
+      AudioService.current_index = AudioService.audioFiles
+          .indexWhere((entity) => entity.uuid == prev_uuid);
+      print(
+          "Track index changed with UUID: ${prev_uuid} to index: ${AudioService.current_index}");
+    } else {
+      AudioService.current_index = 0;
+      print(
+          "Track index changed with UUID: ${prev_uuid} to index: ${AudioService.current_index}");
     }
 
     setState(() {});
@@ -510,7 +530,12 @@ class _MeshAudioVisualizerState extends State<MeshAudioVisualizer>
       if (event is KeyDownEvent &&
           event.logicalKey == LogicalKeyboardKey.escape) {
         setState(() {
-          _searchFocusNode.unfocus();
+          if (!keymap) {
+            _searchFocusNode.unfocus();
+          } else {
+            Navigator.of(context, rootNavigator: true).pop();
+            keymap = false;
+          }
         });
         return true;
       }
@@ -724,6 +749,10 @@ class _MeshAudioVisualizerState extends State<MeshAudioVisualizer>
 
     AudioService.current_index =
         AudioService.audioFiles.indexWhere((entity) => entity.path == path);
+    AudioService.current_uuid = AudioService
+        .audioFiles[
+            AudioService.audioFiles.indexWhere((entity) => entity.path == path)]
+        .uuid;
 
     setState(() {
       _songTitle = metadata.trackName;
@@ -1263,7 +1292,10 @@ class _MeshAudioVisualizerState extends State<MeshAudioVisualizer>
                                     child: Align(
                                       alignment: Alignment.centerLeft,
                                       child: Text(
-                                        file.title,
+                                        file.title
+                                            .trim()
+                                            .replaceAll('\n', '')
+                                            .replaceAll('\r', ''),
                                         overflow: TextOverflow.ellipsis,
                                         style: const TextStyle(fontSize: 13),
                                       ),
