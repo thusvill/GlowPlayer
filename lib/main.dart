@@ -17,6 +17,7 @@ import "package:window_manager/window_manager.dart";
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dart_tags/dart_tags.dart';
 import 'package:string_similarity/string_similarity.dart';
+import 'package:another_flushbar/flushbar.dart';
 
 String _searchQuery = '';
 
@@ -280,6 +281,134 @@ void showBlurredPopup(BuildContext context) {
   );
 }
 
+class NotificationService {
+  static Flushbar? _loadingBar;
+  static ValueNotifier<double>? _progressNotifier;
+
+  static void showProgress(BuildContext context, String message) {
+    _progressNotifier = ValueNotifier(0.0);
+
+    _loadingBar = Flushbar(
+      flushbarPosition: FlushbarPosition.TOP,
+      flushbarStyle: FlushbarStyle.FLOATING,
+      backgroundColor: Colors.transparent,
+      boxShadows: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.25),
+          blurRadius: 20,
+          offset: Offset(0, 8),
+        ),
+      ],
+      margin: const EdgeInsets.only(top: 24, left: 12),
+      padding: const EdgeInsets.all(0),
+      borderRadius: BorderRadius.circular(12),
+      maxWidth: 320,
+      isDismissible: false,
+      duration: const Duration(days: 1),
+      messageText: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.grey.shade900.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.download, color: Colors.blue[300], size: 24),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        message,
+                        style: const TextStyle(color: Colors.white),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                ValueListenableBuilder<double>(
+                  valueListenable: _progressNotifier!,
+                  builder: (_, value, __) => LinearProgressIndicator(
+                    value: value.clamp(0.0, 1.0),
+                    backgroundColor: Colors.white12,
+                    valueColor:
+                        const AlwaysStoppedAnimation<Color>(Colors.blueAccent),
+                    minHeight: 4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    )..show(context);
+  }
+
+  static void updateProgress(double progress) {
+    _progressNotifier?.value = progress;
+  }
+
+  static void hide() {
+    _loadingBar?.dismiss();
+    _loadingBar = null;
+    _progressNotifier = null;
+  }
+
+  static void showInfo(BuildContext context, String message) {
+    Flushbar(
+      flushbarPosition: FlushbarPosition.TOP,
+      flushbarStyle: FlushbarStyle.FLOATING,
+      backgroundColor: Colors.transparent,
+      boxShadows: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.25),
+          blurRadius: 20,
+          offset: Offset(0, 8),
+        ),
+      ],
+      margin: const EdgeInsets.only(top: 24, left: 12),
+      padding: const EdgeInsets.all(0),
+      borderRadius: BorderRadius.circular(12),
+      maxWidth: 320,
+      isDismissible: true,
+      duration: const Duration(seconds: 3),
+      messageText: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.grey.shade900.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Icon(Icons.info_outline, color: Colors.blue[300], size: 24),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    message,
+                    style: const TextStyle(color: Colors.white),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    )..show(context);
+  }
+}
+
 Widget keyUsageRow(String key, String usage) {
   return Padding(
     padding: const EdgeInsets.symmetric(vertical: 6.0),
@@ -374,7 +503,6 @@ class _MeshAudioVisualizerState extends State<MeshAudioVisualizer>
     if (query.isEmpty) {
       AudioService.audioFiles = AudioService.allFiles;
       print("Search query is empty");
-      
     } else {
       final isArtistSearch = query.startsWith('@');
       final searchTerm = isArtistSearch ? query.substring(1) : query;
@@ -384,17 +512,16 @@ class _MeshAudioVisualizerState extends State<MeshAudioVisualizer>
             ? track.artist.toLowerCase()
             : track.title.toLowerCase();
 
-
         final similarity =
             StringSimilarity.compareTwoStrings(target, searchTerm);
-
 
         final containsMatch = target.contains(searchTerm);
 
         return containsMatch || similarity > 0.9;
       }).toList();
 
-      if(AudioService.audioFiles.isEmpty){
+      if (AudioService.audioFiles.isEmpty) {
+        NotificationService.showInfo(context, "No search found!");
         AudioService.audioFiles = AudioService.allFiles;
       }
     }
@@ -426,7 +553,8 @@ class _MeshAudioVisualizerState extends State<MeshAudioVisualizer>
     });
 
     HardwareKeyboard.instance.addHandler(_handleKey);
-    _loadFolderPath();
+
+    //_loadFolderPath();
     //_loadAudioFiles();
 
     final initialColors = [
@@ -478,6 +606,7 @@ class _MeshAudioVisualizerState extends State<MeshAudioVisualizer>
 
   Future<void> _pickMusicFolder() async {
     String? selectedDirectory = await FilePicker.platform.getDirectoryPath();
+
     if (selectedDirectory != null) {
       final dir = Directory(selectedDirectory);
       final files = dir.listSync(recursive: true).where((file) {
@@ -485,10 +614,15 @@ class _MeshAudioVisualizerState extends State<MeshAudioVisualizer>
         return ['mp3', 'm4a', 'flac'].contains(ext);
       });
 
+      final filesList = files.toList();
+
+      print("📂 Loading files from: $dir");
+      NotificationService.showProgress(context, '📂 Loading audio files...');
+
       final tagProcessor = TagProcessor();
       List<TrackData> loadedTracks = [];
 
-      for (var file in files) {
+      for (var file in filesList) {
         try {
           final f = File(file.path);
           final tags = await tagProcessor.getTagsFromByteArray(f.readAsBytes());
@@ -515,7 +649,15 @@ class _MeshAudioVisualizerState extends State<MeshAudioVisualizer>
           final name = file.path.split(Platform.pathSeparator).last;
           loadedTracks.add(TrackData(path: file.path, title: name, artist: ''));
         }
+        NotificationService.updateProgress(
+            filesList.indexOf(file) / filesList.length);
       }
+
+      NotificationService.hide();
+
+      print("✅ Loaded ${loadedTracks.length} audio tracks.");
+      NotificationService.showInfo(
+          context, '✅ Loaded ${loadedTracks.length} audio tracks.');
 
       setState(() {
         AudioService.allFiles = loadedTracks;
@@ -651,6 +793,7 @@ class _MeshAudioVisualizerState extends State<MeshAudioVisualizer>
       return;
     }
     print("📂 Loading files from: $musicDir");
+    NotificationService.showProgress(context, '📂 Loading audio files...');
 
     final files = musicDir
         .listSync(recursive: true)
@@ -694,13 +837,17 @@ class _MeshAudioVisualizerState extends State<MeshAudioVisualizer>
         loadedTracks
             .add(TrackData(path: file.path, title: fallbackName, artist: ''));
       }
+      NotificationService.updateProgress((files.indexOf(file)) / files.length);
     }
+    NotificationService.hide();
 
     setState(() {
       AudioService.audioFiles = loadedTracks;
     });
 
     print("✅ Loaded ${loadedTracks.length} audio tracks.");
+    NotificationService.showInfo(
+        context, '✅ Loaded ${loadedTracks.length} audio tracks.');
   }
 
   double _randVelocity() {
